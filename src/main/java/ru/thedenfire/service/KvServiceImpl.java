@@ -16,7 +16,7 @@ public final class KvServiceImpl implements KvService {
     }
 
     @Override
-    public void put(String key, String value) {
+    public void put(String key, byte[] value) {
         repository.put(key, value);
     }
 
@@ -44,5 +44,14 @@ public final class KvServiceImpl implements KvService {
     @Override
     public void close() {
         repository.close();
+    }
+
+    @Override
+    public void test() {
+        int total = 5_000_000;
+
+        for (int i = 0; i < total; i++) {
+            repository.put("val - " + i, ("value - " + i).getBytes());
+        }
     }
 }

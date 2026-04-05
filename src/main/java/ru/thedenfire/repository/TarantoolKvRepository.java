@@ -24,7 +24,7 @@ public final class TarantoolKvRepository implements KvRepository {
     }
 
     @Override
-    public void put(String key, String value) {
+    public void put(String key, byte[] value) {
         try {
             client.eval(
                     "return box.space.KV:replace({...})",
@@ -50,10 +50,13 @@ public final class TarantoolKvRepository implements KvRepository {
         List<?> result = response.get();
         if (result == null || result.isEmpty()) return Optional.empty();
         Object first = result.get(0);
+
         if (!(first instanceof List<?> tuple) || tuple.isEmpty()) return Optional.empty();
         String k = Objects.toString(tuple.get(0), null);
+
         if (k == null) return Optional.empty();
-        String v = tuple.size() > 1 ? Objects.toString(tuple.get(1), null) : null;
+        byte[] v = tuple.size() > 1 ? (byte[]) tuple.get(1) : null;
+
         return Optional.of(new KeyValue(k, v));
     }
 

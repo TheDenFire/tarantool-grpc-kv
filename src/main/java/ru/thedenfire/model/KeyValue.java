@@ -15,5 +15,5 @@ import lombok.Setter;
 @JsonPropertyOrder({"key", "value"})
 public class KeyValue {
     private String key;
-    private String value;
+    private byte[] value;
 }

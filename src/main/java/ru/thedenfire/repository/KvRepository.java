@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 public interface KvRepository extends AutoCloseable {
-    void put(String key, String value);
+    void put(String key, byte[] value);
     Optional<KeyValue> get(String key);
     boolean delete(String key);
     void scanRange(String keySince, String keyTo, Consumer<KeyValue> consumer);

@@ -1,21 +1,11 @@
 package ru.thedenfire.controller;
 
+import com.google.protobuf.ByteString;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.thedenfire.kv.v1.CountRequest;
-import ru.thedenfire.kv.v1.CountResponse;
-import ru.thedenfire.kv.v1.DeleteRequest;
-import ru.thedenfire.kv.v1.DeleteResponse;
-import ru.thedenfire.kv.v1.GetRequest;
-import ru.thedenfire.kv.v1.GetResponse;
-import ru.thedenfire.kv.v1.KeyValueEntry;
-import ru.thedenfire.kv.v1.KeyValueServiceGrpc;
-import ru.thedenfire.kv.v1.PutRequest;
-import ru.thedenfire.kv.v1.PutResponse;
-import ru.thedenfire.kv.v1.RangeRequest;
-import ru.thedenfire.kv.v1.RangeResponse;
+import ru.thedenfire.kv.v1.*;
 import ru.thedenfire.model.KeyValue;
 import ru.thedenfire.service.KvService;
 
@@ -36,7 +26,7 @@ public final class KvGrpcController extends KeyValueServiceGrpc.KeyValueServiceI
     public void put(PutRequest request, StreamObserver<PutResponse> responseObserver) {
         try {
             validateKey(request.getKey(), "key");
-            service.put(request.getKey(), request.hasValue() ? request.getValue() : null);
+            service.put(request.getKey(), request.hasValue() ? request.getValue().toByteArray() : null);
             responseObserver.onNext(PutResponse.newBuilder().setKey(request.getKey()).build());
             responseObserver.onCompleted();
         } catch (IllegalArgumentException e) {
@@ -124,6 +114,29 @@ public final class KvGrpcController extends KeyValueServiceGrpc.KeyValueServiceI
         }
     }
 
+    @Override
+    public void test(TestRequest request, StreamObserver<TestResponse> responseObserver) {
+        try {
+            service.test();
+
+            responseObserver.onNext(
+                    TestResponse.newBuilder()
+                            .setInserted(5_000_000)
+                            .build()
+            );
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            log.error("test failed", e);
+            responseObserver.onError(
+                    Status.INTERNAL
+                            .withDescription("Failed to run test")
+                            .withCause(e)
+                            .asRuntimeException()
+            );
+        }
+    }
+
     private static void validateKey(String key, String fieldName) {
         if (key == null || key.isBlank()) {
             throw new IllegalArgumentException(fieldName + " must not be blank");
@@ -134,7 +147,7 @@ public final class KvGrpcController extends KeyValueServiceGrpc.KeyValueServiceI
         KeyValueEntry.Builder builder = KeyValueEntry.newBuilder()
                 .setKey(keyValue.getKey());
         if (keyValue.getValue() != null) {
-            builder.setValue(keyValue.getValue());
+            builder.setValue(ByteString.copyFrom(keyValue.getValue()));
         }
         return builder.build();
     }
