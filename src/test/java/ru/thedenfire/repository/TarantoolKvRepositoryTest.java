@@ -31,7 +31,9 @@ class TarantoolKvRepositoryTest {
             )
             .withCommand("tarantool", "/opt/tarantool/init.lua")
             .withEnv("TARANTOOL_LISTEN", "0.0.0.0:3301")
-            .withEnv("KV_SPACE_NAME", "KV")
+            .withEnv("TARANTOOL_USER", "test")
+            .withEnv("TARANTOOL_PASSWORD", "test")
+            .withEnv("KV_SPACE_NAME", "kv")
             .waitingFor(Wait.forListeningPort());
 
     static TarantoolBoxClient client;
@@ -42,9 +44,10 @@ class TarantoolKvRepositoryTest {
         client = TarantoolFactory.box()
                 .withHost(tarantool.getHost())
                 .withPort(tarantool.getMappedPort(3301))
-                .withUser("guest")
+                .withUser("test")
+                .withPassword("test")
                 .build();
-        repository = new TarantoolKvRepository(client);
+        repository = new TarantoolKvRepository(client, "kv", 1000);
     }
 
     @AfterAll
@@ -54,10 +57,8 @@ class TarantoolKvRepositoryTest {
 
     @BeforeEach
     void cleanup() {
-        client.eval("box.space.KV:truncate()", List.of()).join();
+        client.eval("box.space.kv:truncate()", List.of()).join();
     }
-
-    // ── put / get ────────────────────────────────────────────────────────────
 
     @Test
     void put_get_returnsStoredValue() {
@@ -101,8 +102,6 @@ class TarantoolKvRepositoryTest {
         assertThat(repository.get("missing")).isEmpty();
     }
 
-    // ── delete ───────────────────────────────────────────────────────────────
-
     @Test
     void delete_existingKey_returnsTrue() {
         repository.put("key1", "value1".getBytes());
@@ -122,8 +121,6 @@ class TarantoolKvRepositoryTest {
     void delete_nonExistentKey_returnsFalse() {
         assertThat(repository.delete("missing")).isFalse();
     }
-
-    // ── count ────────────────────────────────────────────────────────────────
 
     @Test
     void count_emptySpace_returnsZero() {
@@ -147,8 +144,6 @@ class TarantoolKvRepositoryTest {
 
         assertThat(repository.count()).isEqualTo(1L);
     }
-
-    // ── scanRange ────────────────────────────────────────────────────────────
 
     @Test
     void scanRange_returnsKeysInRange() {
