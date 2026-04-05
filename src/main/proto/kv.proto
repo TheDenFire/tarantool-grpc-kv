@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package ru.thedenfire.kv.v1;
+
+option java_multiple_files = true;
+option java_outer_classname = "KvApiProto";
+option java_package = "ru.thedenfire.kv.v1";
+
+service KeyValueService {
+  rpc Put(PutRequest) returns (PutResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc Range(RangeRequest) returns (stream RangeResponse);
+  rpc Count(CountRequest) returns (CountResponse);
+}
+
+message KeyValueEntry {
+  string key = 1;
+  optional bytes value = 2;
+}
+
+message PutRequest {
+  string key = 1;
+  optional bytes value = 2;
+}
+
+message PutResponse {
+  string key = 1;
+}
+
+message GetRequest {
+  string key = 1;
+}
+
+message GetResponse {
+  KeyValueEntry entry = 1;
+}
+
+message DeleteRequest {
+  string key = 1;
+}
+
+message DeleteResponse {
+  bool deleted = 1;
+}
+
+message RangeRequest {
+  string key_from_inclusive = 1;
+  string key_to_exclusive = 2;
+}
+
+message RangeResponse {
+  KeyValueEntry entry = 1;
+}
+
+message CountRequest {}
+
+message CountResponse {
+  int64 count = 1;
+}
