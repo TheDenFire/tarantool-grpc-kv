@@ -6,7 +6,10 @@ services:
     command: ["tarantool", "/opt/tarantool/init.lua"]
     environment:
       TARANTOOL_LISTEN: ${TARANTOOL_LISTEN}
+      TARANTOOL_USER: ${TARANTOOL_USER}
+      TARANTOOL_PASSWORD: ${TARANTOOL_PASSWORD}
       KV_SPACE_NAME: ${KV_SPACE_NAME}
+      MEMTX_MEMORY: ${MEMTX_MEMORY}
     volumes:
       - ./src/main/resources/tarantool/init.lua:/opt/tarantool/init.lua:ro
       - tarantool_data:/var/lib/tarantool
@@ -31,8 +34,6 @@ services:
       TARANTOOL_USER: ${TARANTOOL_USER}
       TARANTOOL_PASSWORD: ${TARANTOOL_PASSWORD}
       TARANTOOL_CONNECT_TIMEOUT_MS: "${TARANTOOL_CONNECT_TIMEOUT_MS}"
-      TARANTOOL_READ_TIMEOUT_MS: "${TARANTOOL_READ_TIMEOUT_MS}"
-      TARANTOOL_REQUEST_TIMEOUT_MS: "${TARANTOOL_REQUEST_TIMEOUT_MS}"
       TARANTOOL_CONNECTIONS: "${TARANTOOL_CONNECTIONS}"
       KV_SPACE_NAME: ${KV_SPACE_NAME}
       KV_RANGE_BATCH_SIZE: "${KV_RANGE_BATCH_SIZE}"
