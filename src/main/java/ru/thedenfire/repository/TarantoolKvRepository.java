@@ -18,16 +18,20 @@ import java.util.function.Consumer;
 public final class TarantoolKvRepository implements KvRepository {
 
     private final TarantoolBoxClient client;
+    private final String spaceName;
+    private final int batchSize;
 
-    public TarantoolKvRepository(TarantoolBoxClient client) {
+    public TarantoolKvRepository(TarantoolBoxClient client, String spaceName, int batchSize) {
         this.client = Objects.requireNonNull(client, "client");
+        this.spaceName = Objects.requireNonNull(spaceName, "spaceName");
+        this.batchSize = batchSize;
     }
 
     @Override
     public void put(String key, byte[] value) {
         try {
             client.eval(
-                    "return box.space.KV:replace({...})",
+                    "return box.space['" + spaceName + "']:replace({...})",
                     Arrays.asList(key, value)
             ).join();
         } catch (RuntimeException e) {
@@ -40,7 +44,7 @@ public final class TarantoolKvRepository implements KvRepository {
         TarantoolResponse<List<?>> response;
         try {
             response = client.eval(
-                    "return box.space.KV:get({...})",
+                    "return box.space['" + spaceName + "']:get({...})",
                     List.of(key)
             ).join();
         } catch (RuntimeException e) {
@@ -65,7 +69,7 @@ public final class TarantoolKvRepository implements KvRepository {
         TarantoolResponse<List<?>> response;
         try {
             response = client.eval(
-                    "return box.space.KV:delete({...})",
+                    "return box.space['" + spaceName + "']:delete({...})",
                     List.of(key)
             ).join();
         } catch (RuntimeException e) {
@@ -85,8 +89,7 @@ public final class TarantoolKvRepository implements KvRepository {
             return;
         }
 
-        TarantoolBoxSpace space = client.space("KV");
-        int batchSize = 1000;
+        TarantoolBoxSpace space = client.space(spaceName);
         String lastSeenKey = null;
         while (true) {
             SelectResponse<List<Tuple<KeyValue>>> response;
@@ -133,7 +136,7 @@ public final class TarantoolKvRepository implements KvRepository {
         TarantoolResponse<List<?>> response;
         try {
             response = client.eval(
-                    "return box.space.KV:count()",
+                    "return box.space['" + spaceName + "']:count()",
                     List.of()
             ).join();
         } catch (RuntimeException e) {

@@ -12,16 +12,24 @@ service KeyValueService {
   rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc Range(RangeRequest) returns (stream RangeResponse);
   rpc Count(CountRequest) returns (CountResponse);
+
+  rpc Test(TestRequest) returns (TestResponse);
+}
+
+message TestRequest {}
+
+message TestResponse {
+  int64 inserted = 1;
 }
 
 message KeyValueEntry {
   string key = 1;
-  optional string value = 2;
+  optional bytes value = 2;
 }
 
 message PutRequest {
   string key = 1;
-  optional string value = 2;
+  optional bytes value = 2;
 }
 
 message PutResponse {

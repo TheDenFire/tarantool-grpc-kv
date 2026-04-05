@@ -24,28 +24,28 @@ public class Application {
         AppConfig config = new AppConfig();
 
         TarantoolBoxClientBuilder builder = TarantoolFactory.box()
-                .withHost(config.tarantoolHost)
-                .withPort(config.tarantoolPort)
-                .withUser(config.tarantoolUser)
-                .withConnectTimeout(config.connectTimeoutMs)
-                .withEventLoopThreadsCount(Math.max(1, config.connections));
+                .withHost(config.getTarantoolHost())
+                .withPort(config.getTarantoolPort())
+                .withUser(config.getTarantoolUser())
+                .withConnectTimeout(config.getConnectTimeoutMs())
+                .withEventLoopThreadsCount(Math.max(1, config.getConnections()));
 
-        if (config.tarantoolPassword != null && !config.tarantoolPassword.isEmpty()) {
-            builder = builder.withPassword(config.tarantoolPassword);
+        if (!config.getTarantoolPassword().isEmpty()) {
+            builder = builder.withPassword(config.getTarantoolPassword());
         }
 
         TarantoolBoxClient client = builder.build();
 
-        KvRepository repository = new TarantoolKvRepository(client);
+        KvRepository repository = new TarantoolKvRepository(client, config.getKvSpaceName(), config.getRangeBatchSize());
         KvService service = new KvServiceImpl(repository);
-        Server server = ServerBuilder.forPort(config.grpcPort)
+        Server server = ServerBuilder.forPort(config.getGrpcPort())
                 .addService(new KvGrpcController(service))
                 .addService(ProtoReflectionService.newInstance())
                 .addService(ProtoReflectionServiceV1.newInstance())
                 .build()
                 .start();
 
-        log.info("gRPC server started on 0.0.0.0:{}", config.grpcPort);
+        log.info("gRPC server started on 0.0.0.0:{}", config.getGrpcPort());
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             server.shutdown();
