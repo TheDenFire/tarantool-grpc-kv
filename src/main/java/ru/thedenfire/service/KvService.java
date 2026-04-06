@@ -1,0 +1,18 @@
+package ru.thedenfire.service;
+
+import ru.thedenfire.model.KeyValue;
+
+import java.util.Optional;
+import java.util.function.Consumer;
+
+public interface KvService extends AutoCloseable {
+    void put(String key, byte[] value);
+    Optional<KeyValue> get(String key);
+    boolean delete(String key);
+    void scanRange(String keySince, String keyTo, Consumer<KeyValue> consumer);
+    long count();
+    void test();
+
+    @Override
+    void close();
+}

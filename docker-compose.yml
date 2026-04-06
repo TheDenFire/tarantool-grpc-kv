@@ -1,0 +1,68 @@
+services:
+  tarantool:
+    image: tarantool/tarantool:3.2.3
+    container_name: kv-tarantool
+    working_dir: /var/lib/tarantool
+    command: ["tarantool", "/opt/tarantool/init.lua"]
+    environment:
+      TARANTOOL_LISTEN: ${TARANTOOL_LISTEN}
+      TARANTOOL_USER: ${TARANTOOL_USER}
+      TARANTOOL_PASSWORD: ${TARANTOOL_PASSWORD}
+      KV_SPACE_NAME: ${KV_SPACE_NAME}
+      MEMTX_MEMORY: ${MEMTX_MEMORY}
+    volumes:
+      - ./src/main/resources/tarantool/init.lua:/opt/tarantool/init.lua:ro
+      - tarantool_data:/var/lib/tarantool
+    ports:
+      - "${TARANTOOL_PORT}:3301"
+    healthcheck:
+      test: ["CMD", "tarantool", "-e", "os.exit(require('socket').tcp_connect('127.0.0.1', 3301) and 0 or 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  kv-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kv-grpc-service
+    environment:
+      TARANTOOL_HOST: ${TARANTOOL_HOST}
+      TARANTOOL_PORT: "${TARANTOOL_PORT}"
+      TARANTOOL_USER: ${TARANTOOL_USER}
+      TARANTOOL_PASSWORD: ${TARANTOOL_PASSWORD}
+      TARANTOOL_CONNECT_TIMEOUT_MS: "${TARANTOOL_CONNECT_TIMEOUT_MS}"
+      TARANTOOL_CONNECTIONS: "${TARANTOOL_CONNECTIONS}"
+      KV_SPACE_NAME: ${KV_SPACE_NAME}
+      KV_RANGE_BATCH_SIZE: "${KV_RANGE_BATCH_SIZE}"
+      GRPC_PORT: "${GRPC_PORT}"
+    ports:
+      - "${GRPC_PORT}:${GRPC_PORT}"
+    depends_on:
+      tarantool:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'true < /dev/tcp/localhost/${GRPC_PORT}' 2>/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  grpcui:
+    image: fullstorydev/grpcui:latest
+    container_name: kv-grpcui
+    command: ["-plaintext", "-port", "8080", "kv-service:${GRPC_PORT}"]
+    ports:
+      - "${GRPCUI_PORT:-8080}:8080"
+    depends_on:
+      kv-service:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - tools
+
+volumes:
+  tarantool_data:
