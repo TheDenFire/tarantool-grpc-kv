@@ -92,7 +92,7 @@ public final class TarantoolKvRepository implements KvRepository {
         TarantoolBoxSpace space = client.space(spaceName);
         String lastSeenKey = null;
         while (true) {
-            SelectResponse<List<Tuple<KeyValue>>> response;
+            SelectResponse<List<Tuple<TarantoolKeyValueTuple>>> response;
             try {
                 response = space.select(
                         List.of(lastSeenKey == null ? keySince : lastSeenKey),
@@ -100,29 +100,29 @@ public final class TarantoolKvRepository implements KvRepository {
                                 .withLimit(batchSize)
                                 .withIterator(lastSeenKey == null ? BoxIterator.GE : BoxIterator.GT)
                                 .build(),
-                        KeyValue.class
+                        TarantoolKeyValueTuple.class
                 ).join();
             } catch (RuntimeException e) {
                 throw new IllegalStateException("Tarantool operation failed", e.getCause() == null ? e : e.getCause());
             }
 
-            List<Tuple<KeyValue>> tuples = response.get();
+            List<Tuple<TarantoolKeyValueTuple>> tuples = response.get();
             if (tuples == null || tuples.isEmpty()) {
                 return;
             }
 
             boolean reachedRangeEnd = false;
-            for (Tuple<KeyValue> tuple : tuples) {
-                KeyValue keyValue = tuple.get();
-                if (keyValue == null || keyValue.getKey() == null) {
+            for (Tuple<TarantoolKeyValueTuple> tuple : tuples) {
+                TarantoolKeyValueTuple raw = tuple.get();
+                if (raw == null || raw.getKey() == null) {
                     continue;
                 }
-                if (keyValue.getKey().compareTo(keyTo) >= 0) {
+                if (raw.getKey().compareTo(keyTo) >= 0) {
                     reachedRangeEnd = true;
                     break;
                 }
-                consumer.accept(keyValue);
-                lastSeenKey = keyValue.getKey();
+                consumer.accept(raw.toDomain());
+                lastSeenKey = raw.getKey();
             }
 
             if (reachedRangeEnd || tuples.size() < batchSize || lastSeenKey == null) {

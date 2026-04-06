@@ -51,7 +51,7 @@ class TarantoolKvRepositoryTest {
     }
 
     @AfterAll
-    static void teardown() throws Exception {
+    static void teardown() {
         repository.close();
     }
 
